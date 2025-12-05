@@ -2,12 +2,28 @@ import React, { useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import VehicleList from './components/VehicleList';
+import VehicleDetails from './components/VehicleDetails';
 import DreamRideGenerator from './components/DreamRideGenerator';
-import { ViewState } from './types';
+import Profile from './components/Profile';
+import AdminDashboard from './components/AdminDashboard';
+import Footer from './components/Footer';
+import ToastContainer from './components/ToastContainer';
+import ChatWidget from './components/ChatWidget';
+import { ViewState, Vehicle } from './types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>(ViewState.HOME);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+
+  const handleVehicleSelect = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    setView(ViewState.VEHICLE_DETAILS);
+    window.scrollTo(0, 0);
+  };
 
   const renderView = () => {
     switch (view) {
@@ -15,13 +31,17 @@ const App: React.FC = () => {
         return (
           <>
             <Hero onBrowse={() => setView(ViewState.BROWSE)} />
-            <section className="py-20 bg-darker border-t border-white/5">
-              <div className="max-w-7xl mx-auto px-4 text-center">
-                <h2 className="text-3xl font-bold text-white mb-12">Trusted by 50,000+ Drivers</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                  {['Tesla', 'BMW', 'Mercedes', 'Porsche'].map((brand) => (
-                    <div key={brand} className="flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity">
-                      <span className="text-2xl font-bold text-white">{brand}</span>
+            <section className="py-32 bg-dark-900 border-t border-white/5 relative overflow-hidden">
+               {/* Background elements */}
+               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-1 bg-gradient-to-r from-transparent via-gold-500/50 to-transparent"></div>
+               
+              <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
+                <span className="text-gold-500 text-xs font-bold uppercase tracking-[0.2em] mb-4 block">Partnerships</span>
+                <h2 className="text-4xl font-serif text-white mb-16">Trusted by the Elite</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-12 items-center justify-items-center opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
+                  {['Aston Martin', 'Bugatti', 'Rolls Royce', 'McLaren'].map((brand) => (
+                    <div key={brand} className="text-2xl font-serif font-bold text-white border border-white/10 px-8 py-4 w-full">
+                      {brand}
                     </div>
                   ))}
                 </div>
@@ -30,72 +50,55 @@ const App: React.FC = () => {
           </>
         );
       case ViewState.BROWSE:
-        return <VehicleList />;
+        return <VehicleList onSelectVehicle={handleVehicleSelect} />;
+      case ViewState.VEHICLE_DETAILS:
+        return selectedVehicle ? (
+          <VehicleDetails 
+            vehicle={selectedVehicle} 
+            onBack={() => setView(ViewState.BROWSE)} 
+          />
+        ) : (
+          <VehicleList onSelectVehicle={handleVehicleSelect} />
+        );
       case ViewState.AI_GENERATOR:
         return <DreamRideGenerator />;
+      case ViewState.PROFILE:
+        return <Profile onChangeView={setView} />;
+      case ViewState.ADMIN:
+        return <AdminDashboard />;
       default:
         return <Hero onBrowse={() => setView(ViewState.BROWSE)} />;
     }
   };
 
   return (
-    <div className="bg-darker min-h-screen text-white font-sans selection:bg-primary selection:text-white">
-      <Navbar currentView={view} onChangeView={setView} />
-      
-      <main>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={view}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-          >
-            {renderView()}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-
-      <footer className="bg-darker border-t border-white/10 py-12 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center mb-4">
-                 <div className="w-8 h-8 bg-gradient-to-tr from-primary to-secondary rounded-lg mr-2"></div>
-                 <span className="text-xl font-bold text-white">Velociraptor</span>
-              </div>
-              <p className="text-gray-400 max-w-sm">
-                The world's first AI-integrated vehicle booking platform. 
-                Rent, ride, and reimagine mobility.
-              </p>
-            </div>
+    <NotificationProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <div className="bg-dark-900 min-h-screen text-white font-sans selection:bg-gold-500 selection:text-black transition-colors duration-300">
+            <Navbar currentView={view} onChangeView={setView} />
             
-            <div>
-              <h4 className="text-white font-bold mb-4">Platform</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li className="hover:text-primary cursor-pointer">Browse Fleet</li>
-                <li className="hover:text-primary cursor-pointer">AI Studio</li>
-                <li className="hover:text-primary cursor-pointer">Pricing</li>
-                <li className="hover:text-primary cursor-pointer">Business</li>
-              </ul>
-            </div>
+            <main>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={view}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  {renderView()}
+                </motion.div>
+              </AnimatePresence>
+            </main>
 
-            <div>
-              <h4 className="text-white font-bold mb-4">Support</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li className="hover:text-primary cursor-pointer">Help Center</li>
-                <li className="hover:text-primary cursor-pointer">Terms of Service</li>
-                <li className="hover:text-primary cursor-pointer">Privacy Policy</li>
-                <li className="hover:text-primary cursor-pointer">Contact Us</li>
-              </ul>
-            </div>
+            {view !== ViewState.VEHICLE_DETAILS && view !== ViewState.ADMIN && <Footer />}
+            <ToastContainer />
+            <ChatWidget />
           </div>
-          <div className="mt-12 pt-8 border-t border-white/5 text-center text-gray-500 text-sm">
-            © 2024 Velociraptor Motors. All rights reserved.
-          </div>
-        </div>
-      </footer>
-    </div>
+        </ThemeProvider>
+      </AuthProvider>
+    </NotificationProvider>
   );
 };
 
